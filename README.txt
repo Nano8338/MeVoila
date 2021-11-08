@@ -26,5 +26,5 @@ Config file:
 	pyproject.toml
 	remarks: 
 	
-From package directory
+From repository (where the pyproject.toml file is located)
 $ black .
