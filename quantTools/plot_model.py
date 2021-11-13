@@ -82,8 +82,10 @@ def w_rate_tenor_dropdown(input_value=0.25):
     )
 
 
-def w_rate_type_radio_button(input_value="forward-looking"):
-    return build_widget_radio_button("Rate type:", ["forward-looking", "backward-looking"], input_value)
+def w_rate_type_radio_button(input_value=RateType.FORWARD_LOOKING, exclude_swap_rate=False):
+    rate_types = [RateType.FORWARD_LOOKING, RateType.BACKWARD_LOOKING, RateType.SWAP_RATE] if not exclude_swap_rate else [RateType.FORWARD_LOOKING, RateType.BACKWARD_LOOKING]
+    rate_types_labels = [rate_type.value for rate_type in rate_types]
+    return build_widget_radio_button("Rate type:", rate_types_labels, input_value)
 
 
 # endregion
@@ -145,7 +147,7 @@ def plot_data(
 
 
 def build_list_rate_indices(tenor, last_expiry, rate_type, allow_negative_dates=True):
-    is_forward_looking = rate_type == "forward-looking"
+    is_forward_looking = rate_type != RateType.BACKWARD_LOOKING
     nb_dates = 250
     start_dates = (
         qttools.multi_linespace([-tenor, 0, last_expiry - tenor], nb_dates)
@@ -157,7 +159,7 @@ def build_list_rate_indices(tenor, last_expiry, rate_type, allow_negative_dates=
 
 def underlying_description(tenor, rate_type):
     months = int(tenor / 0.25 * 3 + 0.01)
-    return f"ForwardLooking {months}M" if rate_type == "forward-looking" else f"BackwardLooking {months}M"
+    return f"{rate_type.value} {tenor}Y" if months >= 12 else f"{rate_type.value}  {months}M"
 
 
 def plot_model_underlying_outputs(tests, f_compute_xy, label_x, label_y, label_title, label_test_type):
@@ -387,10 +389,12 @@ def build_hw_option_tests(
     hw_vol,
     max_expiry,
 ):
+    rate_type_1 = RateType(rate_type_1)
+    rate_type_2 = RateType(rate_type_2)
     hw_model_1 = ModelHullWhite.build_default(mean_rev_1, hw_vol)
     hw_model_2 = ModelHullWhite.build_default(mean_rev_2, hw_vol)
 
-    allow_negative_dates = "backward-looking" in [rate_type_1, rate_type_2]
+    allow_negative_dates = RateType.BACKWARD_LOOKING in [rate_type_1, rate_type_2]
 
     rate_underlyings_1 = build_list_rate_indices(tenor_1, max_expiry, rate_type_1, allow_negative_dates)
     rate_underlyings_2 = build_list_rate_indices(tenor_2, max_expiry, rate_type_2, allow_negative_dates)
@@ -424,6 +428,8 @@ def build_hw_option_smile_tests(
     rate_type_1,
     rate_type_2,
 ):
+    rate_type_1 = RateType(rate_type_1)
+    rate_type_2 = RateType(rate_type_2)
     hw_model_1 = ModelHullWhite.build_default(mean_rev_1, hw_vol)
     hw_model_2 = ModelHullWhite.build_default(mean_rev_2, hw_vol)
 
@@ -451,15 +457,16 @@ def plot_interactive_hw_underlyings(
     f_compare_hw_underlyings,
     mean_rev_1=0.0,
     mean_rev_2=0.0,
-    rate_type_1="forward-looking",
-    rate_type_2="forward-looking",
+    rate_type_1=RateType.FORWARD_LOOKING,
+    rate_type_2=RateType.FORWARD_LOOKING,
+    exclude_swap_rate=False,
 ):
     w_caplet_1 = widgets.HBox(
         [
             widgets.Label("Caplet 1:"),
             w_hw_mean_rev_slider(mean_rev_1),
             w_rate_tenor_dropdown(),
-            w_rate_type_radio_button(rate_type_1),
+            w_rate_type_radio_button(rate_type_1, exclude_swap_rate),
         ]
     )
     w_caplet_2 = widgets.HBox(
@@ -467,7 +474,7 @@ def plot_interactive_hw_underlyings(
             widgets.Label("Caplet 2:"),
             w_hw_mean_rev_slider(mean_rev_2),
             w_rate_tenor_dropdown(),
-            w_rate_type_radio_button(rate_type_2),
+            w_rate_type_radio_button(rate_type_2, exclude_swap_rate),
         ]
     )
 
@@ -512,8 +519,9 @@ def analyze_hw_caplets(hw_vol=0.001, max_expiry=10.0):
 
     plot_interactive_hw_underlyings(
         plot_hw_atm_option_values,
-        rate_type_1="forward-looking",
-        rate_type_2="backward-looking",
+        rate_type_1=RateType.FORWARD_LOOKING,
+        rate_type_2=RateType.BACKWARD_LOOKING,
+        exclude_swap_rate=True,
     )
 
 
@@ -551,8 +559,8 @@ def analyze_hw_term_structure(
         plot_hw_term_structure,
         mean_rev_1=mean_rev_1,
         mean_rev_2=mean_rev_2,
-        rate_type_1="forward-looking",
-        rate_type_2="forward-looking",
+        rate_type_1=RateType.FORWARD_LOOKING,
+        rate_type_2=RateType.FORWARD_LOOKING,
     )
 
 
