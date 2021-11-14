@@ -69,10 +69,33 @@ def build_widget_radio_button(label, options, input_value):
 
 # applied widgets
 
+def update_widget_dropdown(w_rate_tenor, rate_type):
+    if RateType.SWAP_RATE == rate_type:
+        rate_tenor_labels = ["6M", "1Y", "2Y", "3Y", "4Y", "5Y", "10Y", "15Y", "20Y", "25Y", "30Y"]
+        rate_tenor_values = [0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
+    else:
+        rate_tenor_labels = ["1M", "3M", "6M", "1Y"]
+        rate_tenor_values = [1.0 / 12.0, 0.25, 0.5, 1.0]
+    w_rate_tenor.options = dict(zip(rate_tenor_labels, rate_tenor_values))
+    w_rate_tenor.index = 1
 
-def w_rate_tenor_dropdown(input_value=0.25):
-    rate_tenor_labels = ["1M", "3M", "6M", "1Y"]
-    rate_tenor_values = [1.0 / 12.0, 0.25, 0.5, 1.0]
+def handle_widget_rate_tenor(change, w_rate_tenor):
+    rate_type_old = RateType(change['old'])
+    rate_type_new = RateType(change['new'])
+    rate_type_has_changed = (rate_type_old == RateType.SWAP_RATE) != (rate_type_new == RateType.SWAP_RATE)
+    if rate_type_has_changed:
+        update_widget_dropdown(w_rate_tenor, rate_type_new)
+
+def w_rate_tenor_dropdown(tenor_swap_rates = False):
+
+    if tenor_swap_rates:
+        rate_tenor_labels = ["6M", "1Y", "2Y", "3Y", "4Y", "5Y", "10Y", "15Y", "20Y", "25Y", "30Y"]
+        rate_tenor_values = [0.5, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0]
+        input_value = 1.0
+    else:
+        rate_tenor_labels = ["1M", "3M", "6M", "1Y"]
+        rate_tenor_values = [1.0 / 12.0, 0.25, 0.5, 1.0]
+        input_value = 0.25
 
     return build_widget_dropdown(
         "tenor",
@@ -148,13 +171,14 @@ def plot_data(
 
 def build_list_rate_indices(tenor, last_expiry, rate_type, allow_negative_dates=True):
 
-    is_forward_looking = rate_type != RateType.BACKWARD_LOOKING
     nb_dates = 250
-    start_dates = (
-        qttools.multi_linespace([-tenor, 0, last_expiry - tenor], nb_dates)
-        if allow_negative_dates
-        else qttools.multi_linespace([0, last_expiry - tenor], nb_dates)[1:]
-    )
+
+    key_dates = [-tenor, 0, last_expiry] if rate_type == RateType.BACKWARD_LOOKING else [0, last_expiry]
+    start_dates = qttools.multi_linespace(key_dates, nb_dates)
+
+    if not allow_negative_dates:
+        start_dates = start_dates[1:]
+
     return [qtinstruments.build_rate(start_date, tenor, rate_type) for start_date in start_dates]
 
 
@@ -466,16 +490,16 @@ def plot_interactive_hw_underlyings(
         [
             widgets.Label("Caplet 1:"),
             w_hw_mean_rev_slider(mean_rev_1),
-            w_rate_tenor_dropdown(),
             w_rate_type_radio_button(rate_type_1, exclude_swap_rate),
+            w_rate_tenor_dropdown(),
         ]
     )
     w_caplet_2 = widgets.HBox(
         [
             widgets.Label("Caplet 2:"),
             w_hw_mean_rev_slider(mean_rev_2),
-            w_rate_tenor_dropdown(),
             w_rate_type_radio_button(rate_type_2, exclude_swap_rate),
+            w_rate_tenor_dropdown(),
         ]
     )
 
@@ -484,12 +508,21 @@ def plot_interactive_hw_underlyings(
         {
             "mean_rev_1": w_caplet_1.children[1],
             "mean_rev_2": w_caplet_2.children[1],
-            "tenor_1": w_caplet_1.children[2],
-            "tenor_2": w_caplet_2.children[2],
-            "rate_type_1": w_caplet_1.children[3],
-            "rate_type_2": w_caplet_2.children[3],
+            "rate_type_1": w_caplet_1.children[2],
+            "rate_type_2": w_caplet_2.children[2],
+            "tenor_1": w_caplet_1.children[3],
+            "tenor_2": w_caplet_2.children[3],
         },
     )
+
+    def handle_widget_rate_tenor_1(change):
+        return handle_widget_rate_tenor(change, w_caplet_1.children[3])
+
+    def handle_widget_rate_tenor_2(change):
+        return handle_widget_rate_tenor(change, w_caplet_2.children[3])
+
+    w_caplet_1.children[2].observe(handle_widget_rate_tenor_1, names='value')
+    w_caplet_2.children[2].observe(handle_widget_rate_tenor_2, names='value')
 
     display(w_caplet_1, w_caplet_2, w_outputs)
 
