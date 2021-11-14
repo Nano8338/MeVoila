@@ -28,3 +28,12 @@ Config file:
 	
 From repository (where the pyproject.toml file is located)
 $ black .
+
+/***********/
+/* PIPREQS */
+/***********/
+
+Run pipreqs to find dependencies
+-> generates requirements.txt
+From repository:
+$ pipreqs .
