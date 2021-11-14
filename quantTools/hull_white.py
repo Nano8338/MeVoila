@@ -176,6 +176,7 @@ class ModelHullWhite:
     def compute_integrated_vol_extended_bond_ratio(self, t, t1, t2):
         return math.sqrt(self.compute_integrated_variance_extended_bond_ratio(t, t1, t2))
 
+    # Call payoff is: basis * max(Libor - K;0)
     def compute_caplet(self, rate_index, strike, call):
         discount = self.rate_curve.discount(rate_index.pay_date)
         forward = self.rate_curve.forward_rate(rate_index.start_date, rate_index.end_date)
@@ -186,9 +187,7 @@ class ModelHullWhite:
         integrated_vol = math.sqrt(integrated_variance)  # equivalent to vol * sqrt(T)
 
         return (
-            1.0
-            / basis
-            * qtvanilla.compute_option_ln(
+            qtvanilla.compute_option_ln(
                 1.0 + basis * forward,
                 1.0 + basis * strike,
                 1.0,
@@ -217,7 +216,7 @@ class ModelHullWhite:
         integrated_variance = self.compute_swaption_variance_approx_normal(swap_rate)
 
         return qtvanilla.compute_option_normal(
-            forward, forward, 1.0, math.sqrt(integrated_variance), annuity, call=call
+            forward, strike, 1.0, math.sqrt(integrated_variance), annuity, call=call
         )
 
     def compute_option_value(self, underlying, strike, call):

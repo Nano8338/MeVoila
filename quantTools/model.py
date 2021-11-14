@@ -37,13 +37,12 @@ def compute_model_option_values(model, underlying, strikes):
 
 def compute_model_smile(model, underlying, nb_std_dev, vol_type):
     forward = underlying.compute_forward(model)
-
     atm_option = model.compute_option_value(underlying, forward, call=True)
     discount = underlying.compute_numeraire(model)
     atm_vol = qtvanilla.compute_implied_atm_vol(atm_option, discount, underlying.expiry, forward, vol_type)
     strikes = qtvanilla.build_range_strikes(forward, atm_vol, underlying.expiry, nb_std_dev, vol_type)
-
     option_values = [model.compute_option_value(underlying, strike, call=True) for strike in strikes]
+
     implied_vol = qtvanilla.compute_implied_vol(
         option_values,
         strikes,

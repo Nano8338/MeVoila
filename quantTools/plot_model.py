@@ -85,7 +85,7 @@ def w_rate_tenor_dropdown(input_value=0.25):
 def w_rate_type_radio_button(input_value=RateType.FORWARD_LOOKING, exclude_swap_rate=False):
     rate_types = [RateType.FORWARD_LOOKING, RateType.BACKWARD_LOOKING, RateType.SWAP_RATE] if not exclude_swap_rate else [RateType.FORWARD_LOOKING, RateType.BACKWARD_LOOKING]
     rate_types_labels = [rate_type.value for rate_type in rate_types]
-    return build_widget_radio_button("Rate type:", rate_types_labels, input_value)
+    return build_widget_radio_button("Rate type:", rate_types_labels, input_value.value)
 
 
 # endregion
@@ -147,6 +147,7 @@ def plot_data(
 
 
 def build_list_rate_indices(tenor, last_expiry, rate_type, allow_negative_dates=True):
+
     is_forward_looking = rate_type != RateType.BACKWARD_LOOKING
     nb_dates = 250
     start_dates = (
@@ -154,7 +155,7 @@ def build_list_rate_indices(tenor, last_expiry, rate_type, allow_negative_dates=
         if allow_negative_dates
         else qttools.multi_linespace([0, last_expiry - tenor], nb_dates)[1:]
     )
-    return [qtinstruments.RateIndex(start_date, start_date + tenor, is_forward_looking) for start_date in start_dates]
+    return [qtinstruments.build_rate(start_date, tenor, rate_type) for start_date in start_dates]
 
 
 def underlying_description(tenor, rate_type):
@@ -433,8 +434,8 @@ def build_hw_option_smile_tests(
     hw_model_1 = ModelHullWhite.build_default(mean_rev_1, hw_vol)
     hw_model_2 = ModelHullWhite.build_default(mean_rev_2, hw_vol)
 
-    rate_underlying_1 = qtinstruments.build_rate(start_date_1, underlying_length_1, rate_type=RateType.FORWARD_LOOKING)
-    rate_underlying_2 = qtinstruments.build_rate(start_date_2, underlying_length_2, rate_type=RateType.FORWARD_LOOKING)
+    rate_underlying_1 = qtinstruments.build_rate(start_date_1, underlying_length_1, rate_type=rate_type_1)
+    rate_underlying_2 = qtinstruments.build_rate(start_date_2, underlying_length_2, rate_type=rate_type_2)
 
     label_test_1 = f"{underlying_description(underlying_length_1, rate_type_1)} (mean rev {mean_rev_1})"
     label_test_2 = f"{underlying_description(underlying_length_2, rate_type_2)} (mean rev {mean_rev_2}) "  # extra space to make sure label_test_1 != label_test_2   # noqa: E501

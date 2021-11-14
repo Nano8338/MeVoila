@@ -58,7 +58,7 @@ class RateIndex(Underlying):
         return model.rate_curve.forward_rate(self.start_date, self.end_date)
 
     def compute_numeraire(self, model):
-        return model.rate_curve.discount(self.pay_date)
+        return (self.end_date - self.start_date) * model.rate_curve.discount(self.pay_date)
 
 
 class BackwardRate(RateIndex):
